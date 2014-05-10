@@ -13,11 +13,27 @@ use Sauce\Sausage\SauceAPI;
  */
 class SauceExtension extends \Codeception\Platform\Extension {
 	static $events = array(
+		'suite.before' => 'beforeSuite',
 		'test.before' => 'beforeTest',
 		'test.fail' => 'testFailed',
 		'test.error' => 'testFailed',
 		'test.success' => 'testSuccess',
 	);
+
+	public function beforeSuite() {
+		// Look for credentials in ENV if not set in config
+		if (!isset($this->config['username'], $this->config['accesskey'])
+			&& isset($_SERVER['SAUCE_USERNAME'], $_SERVER['SAUCE_ACCESS_KEY'])
+		) {
+			$this->config['username'] = $_SERVER['SAUCE_USERNAME'];
+			$this->config['accesskey'] = $_SERVER['SAUCE_ACCESS_KEY'];
+		}
+
+		// Throw exception if missing credentials
+		if (empty($this->config['username']) || empty($this->config['accesskey'])) {
+			throw new \Exception("Missing Sauce Labs credentials.");
+		}
+	}
 
 	public function beforeTest(\Codeception\Event\Test $e) {
 		$s = new SauceAPI($this->config['username'], $this->config['accesskey']);
